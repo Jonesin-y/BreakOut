@@ -5,5 +5,5 @@ uniform sampler2D u_image;
 uniform vec4 u_spriteColor;
 void main()
 {
-    FragColor =texture(u_image,f_TexCoord);
+   FragColor =u_spriteColor*texture(u_image,f_TexCoord);
 }

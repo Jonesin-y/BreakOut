@@ -1,5 +1,8 @@
 #pragma once
 #include<cmath>
+//MSVC
+#include<malloc.h>
+
 //STL
 #include<iostream>
 #include<utility>

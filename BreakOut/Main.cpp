@@ -3,6 +3,23 @@
 #include<GLFW/glfw3.h>
 #include"Game.h"
 #include<iostream>
+
+Game BreakOut(800, 600);
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
+{
+	//printf("key=%d action=%d\n", key, action);
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GLFW_TRUE);
+	if (key >= 0 && key <= 1024)
+	{
+		if (action == GLFW_PRESS)
+			BreakOut.Keys[key] = true;
+		else if (action == GLFW_RELEASE)
+			BreakOut.Keys[key] = false;
+	}
+}
+
 int main()
 {
 	GLFWwindow* window;
@@ -28,23 +45,23 @@ int main()
 		printf("Failed to initialize GLAD\n");
 		return -1;
 	}
-	
-	Game BreakOut(800,600);
+	glfwSetKeyCallback(window,key_callback);
 	BreakOut.Init();
 
 	float currentTime = 0.0f;
 	float deltaTime = 0.0f;
-	
+	glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		deltaTime = glfwGetTime() - currentTime;
 		currentTime = glfwGetTime();
 		glClear(GL_COLOR_BUFFER_BIT);
-		glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
 		glfwPollEvents();
 		BreakOut.ProcessInput(deltaTime);
 		BreakOut.Update(deltaTime);
 		BreakOut.Render();
+		
 
 		glfwSwapBuffers(window);
 	}
@@ -52,3 +69,4 @@ int main()
 
 
 }
+

@@ -22,6 +22,7 @@ inline unsigned int ShaderDataTypeToSize(ShaderDataType dataType)
 	case Int3:   return 4 * 3;
 	case Int4:   return 4 * 4;
 	case Bool:   return 1;
+	default:return 0;
 	}
 }
 inline unsigned int ShaderDataTypeToCount(ShaderDataType dataType)
@@ -40,6 +41,8 @@ inline unsigned int ShaderDataTypeToCount(ShaderDataType dataType)
 	case Int3:   return 3;
 	case Int4:   return 4;
 	case Bool:   return 1;
+	default:return 0;
+
 	}
 }
 inline GLenum ShaderDataTypeToGladType(ShaderDataType dataType)
@@ -58,6 +61,8 @@ inline GLenum ShaderDataTypeToGladType(ShaderDataType dataType)
 	case Int3:   return GL_INT;
 	case Int4:   return GL_INT;
 	case Bool:   return GL_BOOL;
+	default:return 0;
+
 	}
 }
 class BufferElement

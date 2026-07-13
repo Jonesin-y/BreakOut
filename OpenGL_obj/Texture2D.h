@@ -1,5 +1,6 @@
 #pragma once
 #include<string>
+#include<Glad/glad.h>
 class Texture2D
 {
 public:

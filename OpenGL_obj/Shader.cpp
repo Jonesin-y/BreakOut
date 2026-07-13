@@ -47,7 +47,7 @@ GLuint Shader::CompileShader(unsigned int type,const std::string& shader_src)
 	{
 		GLint length;
 		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-		char* message = (char*)alloca(length);
+		char* message = (char*)_alloca(length);
 		glGetShaderInfoLog(id, length, &length, message);
 		std::cout << "Fail to Compile" << ((type == GL_VERTEX_SHADER) ? "VertexShader" : "FragmentShader")<< std::endl;
 		std::cout << "Error: " << message << std::endl;
@@ -72,7 +72,7 @@ GLuint Shader::CreateShader(const std::string& vs_src, const std::string& fs_src
 	{
 		GLint length;
 		glGetProgramiv(id, GL_INFO_LOG_LENGTH, &length);
-		char* message = (char*)alloca(length);
+		char* message = (char*)_alloca(length);
 		glGetProgramInfoLog(id, length, &length, message);
 		std::cout << "Fail to Link" << std::endl;
 		std::cout << "Error: " << message << std::endl;
@@ -101,7 +101,7 @@ GLuint Shader::CreateShader(const std::string& vs_src, const std::string& fs_src
 	{
 		GLint length;
 		glGetProgramiv(id, GL_INFO_LOG_LENGTH, &length);
-		char* message = (char*)alloca(length);
+		char* message = (char*)_alloca(length);
 		glGetProgramInfoLog(id, length, &length, message);
 		std::cout << "Fail to Link" << std::endl;
 		std::cout << "Error: " << message << std::endl;
