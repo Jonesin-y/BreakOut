@@ -1,3 +1,7 @@
+# Visual Studio
+.vs/
+
+# Project files
 BreakOut.slnx
 BreakOut.vcxproj
 BreakOut.vcxproj.filters
