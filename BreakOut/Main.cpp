@@ -23,6 +23,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main()
 {
 	GLFWwindow* window;
+	std::cout << "创建窗口" << std::endl;
 	if (!glfwInit())
 		return -1;
 	//----------窗口初始化设置----------
@@ -50,6 +51,7 @@ int main()
 
 	float currentTime = 0.0f;
 	float deltaTime = 0.0f;
+	glEnable(GL_BLEND);
 	glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
 
 	while (!glfwWindowShouldClose(window))

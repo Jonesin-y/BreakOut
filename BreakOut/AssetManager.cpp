@@ -6,16 +6,19 @@ std::map<std::string, Ref(Shader)>AssetManager::m_Shaders;
 std::map<std::string, Ref(Texture2D)>AssetManager::m_Texture2Ds;
 void AssetManager::LoadShader(const std::string& vs_src, const std::string& fs_src, const std::string& gs_src, const std::string& name)
 {
+	printf("着色器加载成功:%s\n", name);
 	m_Shaders[name] = std::make_shared<Shader>(vs_src, fs_src,gs_src);
 }
 
 void AssetManager::LoadShader(const std::string& vs_src, const std::string& fs_src, const std::string& name)
 {
+	printf("着色器加载成功:%s\n", name);
 	m_Shaders[name] = std::make_shared<Shader>(vs_src, fs_src);
 }
 
 void AssetManager::LoadTexture2D(const std::string& filePath, const std::string& name)
 {
+	printf("纹理加载成功:%s\n", name);
 	m_Texture2Ds[name] = std::make_shared<Texture2D>(filePath);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include"Sprite2DRenderer.h"
+#include"ParticleGenerator.h"
 #include"GameObject.h"
 #include"BallObject.h"
 #include<vector>
@@ -33,7 +34,7 @@ public:
 private:
 	float m_Width, m_Height;
 	unsigned int m_Level;
-	
+	Ref(ParticleGenerator) m_ParticleGenerator;
 	Ref(Sprite2DRenderer) m_Sprite2DRenderer;
 	Ref(GameObject) m_Player;
 	Ref(BallObject) m_Ball;

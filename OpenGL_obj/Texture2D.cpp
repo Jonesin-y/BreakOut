@@ -13,7 +13,7 @@ Texture2D::Texture2D(const std::string fileName)
 	GLenum InternalFormat, dataFormat;
 	if (m_TexData)
 	{
-		//printf("纹理加载成功: %s (%dx%d)\n", fileName.c_str(), m_Width, m_Height);
+		printf("纹理加载成功: %s (%dx%d)\n", fileName.c_str(), m_Width, m_Height);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glTextureStorage2D(m_RendererID, levels, GL_RGBA8, m_Width, m_Height);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

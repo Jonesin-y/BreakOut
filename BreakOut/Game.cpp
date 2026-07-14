@@ -4,6 +4,7 @@
 #include "AssetManager.h"
 #include "GameLevel.h"
 #include "Sprite2DRenderer.h"
+#include "ParticleGenerator.h"
 #include <filesystem>
 #include <GLFW/glfw3.h>
 
@@ -36,12 +37,14 @@ void Game::Init()
 
 	std::cout << "当前工作目录" << std::filesystem::current_path() << std::endl;
 	AssetManager::LoadShader("Assets/Shader/test.vs", "Assets/Shader/test.fs","Sprite2DShader");
+	AssetManager::LoadShader("Assets/Shader/particle.vs", "Assets/Shader/particle.fs", "ParticleShader");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Jonesin.jpg", "Jonesin.jpg");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Background.jpg", "Background.jpg");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Normal_Brick.png", "Normal_Brick.png");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Solid_Brick.png", "Solid_Brick.png");
 	AssetManager::LoadTexture2D("Assets/Texture2D/paddle.png", "paddle.png");
 	AssetManager::LoadTexture2D("Assets/Texture2D/awesomeface.png", "awesomeface.png");
+	AssetManager::LoadTexture2D("Assets/Texture2D/particle.png", "particle.png");
 
 
 	m_Player = std::make_shared<GameObject>(
@@ -72,10 +75,15 @@ void Game::Init()
 	glm::mat4 projection = glm::mat4(1.0f);
 	projection = glm::ortho(0.0f, m_Width, 0.0f, m_Height, -1.0f, 1.0f);
 	Ref(Shader) Sprite2DShader = AssetManager::GetShader("Sprite2DShader");
-	Sprite2DShader->SetUniform1i("u_image", 0);
+	Ref(Shader) Particle2DShader = AssetManager::GetShader("ParticleShader");
+	Sprite2DShader->SetUniform1i("u_Sprite2DImage", 0);
 	Sprite2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
+	Particle2DShader->SetUniform1i("u_ParticleImage", 1);
+	Particle2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
 	m_Sprite2DRenderer= std::make_shared<Sprite2DRenderer>(Sprite2DShader);
 
+	m_ParticleGenerator = std::make_shared<ParticleGenerator>(AssetManager::GetTexture2D("particle.png"), Particle2DShader, 500);
+	
 
 
 }
@@ -90,6 +98,13 @@ void Game::Update(float deltaTime)
 		m_Ball->Move(deltaTime, m_Width, m_Height);
 		DoCollision();
 	}
+	if(m_Ball->Velocity.x>=0.05f || m_Ball->Velocity.x <= -0.05f)
+		m_ParticleGenerator->UpdateParticles(deltaTime,glm::vec2(m_Ball->Position.x+m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius),1,m_Ball->Radius/2);
+	else if(!m_ParticleGenerator->IsEmpty())
+		m_ParticleGenerator->UpdateParticles(deltaTime, glm::vec2(m_Ball->Position.x + m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius), 0, m_Ball->Radius / 2);
+
+
+
 }
 
 void Game::ProcessInput(float deltaTime)
@@ -129,12 +144,14 @@ void Game::Render()
 		m_Sprite2DRenderer->DrawSprite2D(AssetManager::GetTexture2D("Background.jpg"),
 			glm::vec2(0.0f), glm::vec2(m_Width, m_Height),
 			0.0f, glm::vec4(1.0f));
+		m_Player->DrawObject(m_Sprite2DRenderer);
+		m_Ball->DrawObject(m_Sprite2DRenderer);
+		m_ParticleGenerator->Draw();
 		if (!m_Levels[m_Level]->IsCompleted())
 			m_Levels[m_Level]->Draw(m_Sprite2DRenderer);
 		else
 			std::cout << "关卡已完成！" << std::endl;
-		m_Player->DrawObject(m_Sprite2DRenderer);
-		m_Ball->DrawObject(m_Sprite2DRenderer);
+		m_ParticleGenerator->Draw();
 	}
 }
 
