@@ -68,5 +68,68 @@ void IndexBuffer::UnBind()
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
+RenderBuffer::RenderBuffer(int width, int height,int samples, GLenum internalFormat)
+{
+	glGenRenderbuffers(1, &m_RendererID);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_RendererID);
+	if (samples == 0)
+		glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, width, height);
+	else
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, internalFormat, width, height);
+}
 
+RenderBuffer::~RenderBuffer()
+{
+	UnBind();
+	glDeleteRenderbuffers(1, &m_RendererID);
+}
+
+void RenderBuffer::Bind()
+{
+	glBindRenderbuffer(GL_RENDERBUFFER, m_RendererID);
+}
+
+void RenderBuffer::UnBind()
+{
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+}
+
+FrameBuffer::FrameBuffer()
+{
+	glGenFramebuffers(1, &m_RendererID);
+	glBindFramebuffer(GL_FRAMEBUFFER,m_RendererID);
+}
+
+FrameBuffer::~FrameBuffer()
+{
+	UnBind();
+	glDeleteFramebuffers(1,&m_RendererID);
+}
+
+void FrameBuffer::Bind(GLenum bufferType)
+{
+	m_bufferType = bufferType;
+	glBindFramebuffer(m_bufferType, m_RendererID);
+}
+
+void FrameBuffer::UnBind()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FrameBuffer::AddTexture2D(unsigned int textureID)
+{
+	Bind(m_bufferType);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("帧缓冲区加载纹理失败!\n");
+}
+
+void FrameBuffer::AddRendererBuffer(unsigned int bufferID)
+{
+	Bind(m_bufferType);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, bufferID);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("帧缓冲区加载渲染缓冲区失败!\n");
+}
 

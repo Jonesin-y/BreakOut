@@ -115,6 +115,32 @@ private:
 	unsigned int m_RendererID;
 	unsigned int m_Count;
 };
+class RenderBuffer
+{
+public:
+	RenderBuffer(int width,int height,int samples = 0, GLenum internalFormat = GL_RGBA);
+	~RenderBuffer();
+	void Bind();
+	void UnBind();
+	inline unsigned int GetBufferID() { return m_RendererID; }
+private:
+	unsigned int m_RendererID;
+	int m_Width, m_Height;
+	int m_Samples;
+};
+class FrameBuffer
+{
+public:
+	FrameBuffer();
+	~FrameBuffer();
+	void Bind(GLenum bufferType);
+	void UnBind();
+	void AddTexture2D(unsigned int textureID);
+	void AddRendererBuffer(unsigned int bufferID);
+private:
+	unsigned int m_RendererID;
+	GLenum m_bufferType;
+};
 class UniformBuffer
 {
 };

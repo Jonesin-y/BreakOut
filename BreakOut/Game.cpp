@@ -8,9 +8,9 @@
 #include <filesystem>
 #include <GLFW/glfw3.h>
 
-const glm::vec2 PLAYER_SIZE = glm::vec2(100.0f, 20.0f);
+const glm::vec2 PLAYER_SIZE = glm::vec2(200.0f, 40.0f);
 const float PLAYER_SPEED = 400.0f;
-const float BALL_RADIUS = 12.5f;
+const float BALL_RADIUS = 25.0f;
 float ball_speed = 300.0f;
 
 glm::vec2 collision_direction[] =
@@ -38,6 +38,7 @@ void Game::Init()
 	std::cout << "当前工作目录" << std::filesystem::current_path() << std::endl;
 	AssetManager::LoadShader("Assets/Shader/test.vs", "Assets/Shader/test.fs","Sprite2DShader");
 	AssetManager::LoadShader("Assets/Shader/particle.vs", "Assets/Shader/particle.fs", "ParticleShader");
+	AssetManager::LoadShader("Assets/Shader/scene_effect.vs", "Assets/Shader/scene_effect.fs", "EffectShader");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Jonesin.jpg", "Jonesin.jpg");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Background.jpg", "Background.jpg");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Normal_Brick.png", "Normal_Brick.png");
@@ -76,34 +77,40 @@ void Game::Init()
 	projection = glm::ortho(0.0f, m_Width, 0.0f, m_Height, -1.0f, 1.0f);
 	Ref(Shader) Sprite2DShader = AssetManager::GetShader("Sprite2DShader");
 	Ref(Shader) Particle2DShader = AssetManager::GetShader("ParticleShader");
+	Ref(Shader) EffectShader = AssetManager::GetShader("EffectShader");
 	Sprite2DShader->SetUniform1i("u_Sprite2DImage", 0);
 	Sprite2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
 	Particle2DShader->SetUniform1i("u_ParticleImage", 1);
 	Particle2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
+	Particle2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
 	m_Sprite2DRenderer= std::make_shared<Sprite2DRenderer>(Sprite2DShader);
-
 	m_ParticleGenerator = std::make_shared<ParticleGenerator>(AssetManager::GetTexture2D("particle.png"), Particle2DShader, 500);
 	
-
+	m_Effect = std::make_shared<PostProcessor>(AssetManager::GetShader("EffectShader"),m_Width,m_Height);
 
 }
 
 void Game::Update(float deltaTime)
 {
-
-	if (!m_Ball->lanuch)
-		m_Ball->Position = glm::vec2(m_Player->Position.x + m_Player->Size.x * 0.5f - BALL_RADIUS * 0.5f, m_Player->Position.y + m_Player->Size.y);
-	else
+	if (State == GAME_ACTIVE)
 	{
-		m_Ball->Move(deltaTime, m_Width, m_Height);
-		DoCollision();
+		if (m_Effect->Shake)
+			m_Effect->ShakeTime -= deltaTime;
+		if (m_Effect->ShakeTime <= 0)
+			m_Effect->Shake = false;
+		if (!m_Ball->lanuch)
+			m_Ball->Position = glm::vec2(m_Player->Position.x + m_Player->Size.x * 0.5f - BALL_RADIUS * 0.5f, m_Player->Position.y + m_Player->Size.y);
+		else
+		{
+			m_Ball->Move(deltaTime, m_Width, m_Height);
+			DoCollision();
+		}
+		if (m_Ball->Velocity.x >= 0.05f || m_Ball->Velocity.x <= -0.05f)
+			m_ParticleGenerator->UpdateParticles(deltaTime, glm::vec2(m_Ball->Position.x + m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius), 1, m_Ball->Radius / 2);
+		else if (!m_ParticleGenerator->IsEmpty())
+			m_ParticleGenerator->UpdateParticles(deltaTime, glm::vec2(m_Ball->Position.x + m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius), 0, m_Ball->Radius / 2);
+
 	}
-	if(m_Ball->Velocity.x>=0.05f || m_Ball->Velocity.x <= -0.05f)
-		m_ParticleGenerator->UpdateParticles(deltaTime,glm::vec2(m_Ball->Position.x+m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius),1,m_Ball->Radius/2);
-	else if(!m_ParticleGenerator->IsEmpty())
-		m_ParticleGenerator->UpdateParticles(deltaTime, glm::vec2(m_Ball->Position.x + m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius), 0, m_Ball->Radius / 2);
-
-
 
 }
 
@@ -141,6 +148,7 @@ void Game::Render()
 {
 	if (State == GAME_ACTIVE)
 	{
+		m_Effect->BeginRender();
 		m_Sprite2DRenderer->DrawSprite2D(AssetManager::GetTexture2D("Background.jpg"),
 			glm::vec2(0.0f), glm::vec2(m_Width, m_Height),
 			0.0f, glm::vec4(1.0f));
@@ -152,6 +160,8 @@ void Game::Render()
 		else
 			std::cout << "关卡已完成！" << std::endl;
 		m_ParticleGenerator->Draw();
+		m_Effect->EndRender();
+		m_Effect->Render(glfwGetTime());
 	}
 }
 
@@ -191,6 +201,11 @@ void Game::DoCollision()
 				glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, brick));
 				if (result!= NONE)
 				{
+					if (!m_Effect->Shake)
+					{
+						m_Effect->ShakeTime = 0.05f;
+							m_Effect->Shake = true;
+					}
 					if(!brick->IsSolid)
 						brick->IsDestroyed = true;
 					switch (result)

@@ -3,6 +3,7 @@
 #include"ParticleGenerator.h"
 #include"GameObject.h"
 #include"BallObject.h"
+#include"PostProcessor.h"
 #include<vector>
 #include<memory>
 #include<tuple>
@@ -34,6 +35,7 @@ public:
 private:
 	float m_Width, m_Height;
 	unsigned int m_Level;
+	Ref(PostProcessor)m_Effect;
 	Ref(ParticleGenerator) m_ParticleGenerator;
 	Ref(Sprite2DRenderer) m_Sprite2DRenderer;
 	Ref(GameObject) m_Player;

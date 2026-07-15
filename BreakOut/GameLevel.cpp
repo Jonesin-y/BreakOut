@@ -53,7 +53,7 @@ bool GameLevel::IsCompleted()
 	return true;
 }
 
-void GameLevel::Init(std::vector<std::vector<unsigned int>>& tileData, unsigned int lvlWidth, unsigned int lvlHeight)
+bool GameLevel::Init(std::vector<std::vector<unsigned int>>& tileData, unsigned int lvlWidth, unsigned int lvlHeight)
 {
 	unsigned int x_Count = tileData[0].size();
 	unsigned int y_Count = tileData.size();
@@ -89,5 +89,6 @@ void GameLevel::Init(std::vector<std::vector<unsigned int>>& tileData, unsigned 
 			}
 		}
 	}
+	return true;
 }
 

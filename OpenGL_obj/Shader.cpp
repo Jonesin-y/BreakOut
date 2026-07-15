@@ -131,6 +131,12 @@ void Shader::SetUniform1i(const std::string& name, int value)
 	glProgramUniform1i(m_RendererID, location, value);
 }
 
+void Shader::SetUniform1iv(const std::string& name, unsigned int count, GLint* value)
+{
+	GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+	glProgramUniform1iv(m_RendererID, location, count, value);
+}
+
 void Shader::SetUniform1f(const std::string& name, float value)
 {
 	GLint location = glGetUniformLocation(m_RendererID, name.c_str());
@@ -153,6 +159,24 @@ void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2,
 {
 	GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 	glProgramUniform4f(m_RendererID, location, v0, v1, v2, v3);
+}
+
+void Shader::SetUniform1fv(const std::string& name, unsigned int count, GLfloat* value)
+{
+	GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+	glProgramUniform1fv(m_RendererID, location, count, value);
+}
+
+void Shader::SetUniform2fv(const std::string& name, unsigned int count, GLfloat* value)
+{
+	GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+	glProgramUniform2fv(m_RendererID, location, count, value);
+}
+
+void Shader::SetUniform3fv(const std::string& name, unsigned int count, GLfloat* value)
+{
+	GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+	glProgramUniform3fv(m_RendererID, location, count, value);
 }
 
 void Shader::SetUniformMat3f(const std::string& name, unsigned int count, unsigned char transpose, const float* value)

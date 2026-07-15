@@ -15,6 +15,6 @@ public:
 	bool IsCompleted();
 	const std::vector<Ref(GameObject)>& GetBricks()const { return m_Bricks; }
 private:
-	void Init(std::vector<std::vector<unsigned int>>& tileData,unsigned int Width,unsigned int Height);
+	bool Init(std::vector<std::vector<unsigned int>>& tileData,unsigned int Width,unsigned int Height);
 	std::vector<Ref(GameObject)> m_Bricks;
 };

@@ -10,7 +10,6 @@ Texture2D::Texture2D(const std::string fileName)
 	//printf("创建纹理:%s,ID=%u\n", fileName.c_str(), m_RendererID);
 	m_TexData = stbi_load(fileName.c_str(), &m_Width, &m_Height, &m_BBP, 4);
 	GLsizei levels = (GLsizei)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
-	GLenum InternalFormat, dataFormat;
 	if (m_TexData)
 	{
 		printf("纹理加载成功: %s (%dx%d)\n", fileName.c_str(), m_Width, m_Height);
@@ -35,6 +34,23 @@ Texture2D::Texture2D(const std::string fileName)
 
 }
 
+Texture2D::Texture2D(int width,int height)
+:m_Width(width),m_Height(height),m_BBP(4),m_TexData(nullptr)
+	//为纹理缓冲开辟空间但不传入数据
+{
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+	GLsizei levels = (GLsizei)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTextureStorage2D(m_RendererID, levels, GL_RGBA8, m_Width, m_Height);
+	glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	GLenum err = glGetError();
+	if (err != GL_NO_ERROR)
+		printf("OpenGL错误(纹理空间分配):0x%X\n", err);
+}
+
 Texture2D::~Texture2D()
 {
 	UnBind();
@@ -43,10 +59,10 @@ Texture2D::~Texture2D()
 
 void Texture2D::Bind(unsigned int slot)
 {
+	glBindTextureUnit(slot, m_RendererID);
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 		printf("glBindTextureUnit错误: 0x%X,textureID = %u,slot = %u\n", err, m_RendererID, slot);
-	glBindTextureUnit(slot, m_RendererID);
 }
 
 void Texture2D::UnBind()

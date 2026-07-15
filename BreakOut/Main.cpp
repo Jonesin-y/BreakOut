@@ -3,8 +3,9 @@
 #include<GLFW/glfw3.h>
 #include"Game.h"
 #include<iostream>
+#include<Windows.h>
 
-Game BreakOut(800, 600);
+Game BreakOut(1400, 1200);
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod)
 {
@@ -22,6 +23,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 int main()
 {
+	SetConsoleOutputCP(CP_UTF8);  // 设置控制台编码为UTF-8，解决中文乱码
 	GLFWwindow* window;
 	std::cout << "创建窗口" << std::endl;
 	if (!glfwInit())
@@ -35,7 +37,7 @@ int main()
 	//----------窗口初始化设置----------
 
 	//----------初始化窗口，创建上下文----------
-	window = glfwCreateWindow(800, 600, "BreakOut", NULL, NULL);
+	window = glfwCreateWindow(1400, 1200, "BreakOut", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -52,8 +54,6 @@ int main()
 	float currentTime = 0.0f;
 	float deltaTime = 0.0f;
 	glEnable(GL_BLEND);
-	glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
-
 	while (!glfwWindowShouldClose(window))
 	{
 		deltaTime = glfwGetTime() - currentTime;
