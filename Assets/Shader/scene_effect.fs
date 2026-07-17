@@ -31,7 +31,7 @@ void main()
     }
     else if(u_confuse)
     {
-        FragColor = texture(u_scene,vec2(1-f_TexCoord.x,1-f_TexCoord.y));
+        FragColor = vec4(1.0-texture(u_scene,f_TexCoord).rgb,1.0f);
     }
     else if(u_shake)
     {

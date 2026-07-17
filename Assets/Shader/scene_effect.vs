@@ -18,7 +18,7 @@ void main()
     if(u_chaos)
     {
         float strength = 0.3;
-        f_TexCoord = vec2(TexCoord.x*sin(u_time)*strength,TexCoord.y*cos(u_time)*strength);
+        f_TexCoord = vec2(TexCoord.x+sin(u_time)*strength,TexCoord.y+cos(u_time)*strength);
     }
     else if(u_confuse)
     {

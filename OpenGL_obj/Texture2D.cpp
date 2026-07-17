@@ -42,8 +42,8 @@ Texture2D::Texture2D(int width,int height)
 	GLsizei levels = (GLsizei)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTextureStorage2D(m_RendererID, levels, GL_RGBA8, m_Width, m_Height);
-	glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	GLenum err = glGetError();

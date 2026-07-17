@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "BallObject.h"
 
-BallObject::BallObject(const Ref(Texture2D)& sprite, glm::vec2 pos,float speed, float radius)
-	:GameObject(sprite,pos,speed,glm::vec2(radius*2,radius*2),glm::vec3(1.0f,1.0f,1.0f)),lanuchDir(glm::vec2(0.0f)),Radius(radius), lanuch(false)
+BallObject::BallObject(const Ref(Texture2D)& sprite, glm::vec2 pos, float speed, float radius)
+	:GameObject(sprite, pos, speed, glm::vec2(radius * 2, radius * 2), glm::vec3(1.0f, 1.0f, 1.0f)), lanuchDir(glm::vec2(0.0f)), Radius(radius), lanuch(false),PassThrough(false)
 {
 }
 

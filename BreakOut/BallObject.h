@@ -8,6 +8,7 @@ class BallObject : public GameObject
 {
 public:
 	float Radius;
+	bool PassThrough;
 	bool lanuch;
 	glm::vec2 lanuchDir;
 	BallObject(const Ref(Texture2D)& sprite,glm::vec2 pos,float speed, float radius);

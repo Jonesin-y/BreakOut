@@ -29,6 +29,11 @@ GameObject::GameObject(const Ref(Texture2D)& sprite, glm::vec2 position, glm::ve
 {
 }
 
+GameObject::GameObject(const Ref(Texture2D)& sprite, glm::vec2 position, glm::vec3 color)
+	:Sprite(sprite),Position(position),Color(color)
+{
+}
+
 void GameObject::DrawObject(const Ref(Sprite2DRenderer)& renderer)
 {
 	if (Sprite)

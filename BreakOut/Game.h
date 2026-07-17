@@ -3,6 +3,7 @@
 #include"ParticleGenerator.h"
 #include"GameObject.h"
 #include"BallObject.h"
+#include"Props.h"
 #include"PostProcessor.h"
 #include<vector>
 #include<memory>
@@ -29,9 +30,7 @@ public:
 	void Update(float deltaTime);
 	void ProcessInput(float deltaTime);
 	void Render();
-	std::tuple<CollisionDir, glm::vec2> IsCollision(const Ref(BallObject)& ball, const Ref(GameObject)& AABB);
-	std::tuple<CollisionDir, glm::vec2> IsCollision(const Ref(GameObject)& AABB1, const Ref(GameObject)& AABB2);
-	void DoCollision();
+	
 private:
 	float m_Width, m_Height;
 	unsigned int m_Level;
@@ -41,5 +40,15 @@ private:
 	Ref(GameObject) m_Player;
 	Ref(BallObject) m_Ball;
 	std::vector<Ref(GameLevel)>m_Levels;
+	std::vector<Ref(Prop)>m_Props;
+
+	std::tuple<CollisionDir, glm::vec2> IsCollision(const Ref(BallObject)& ball, const Ref(GameObject)& AABB);
+	bool IsCollision(const Ref(GameObject)& AABB1, const Ref(GameObject)& AABB2);
+	void DoCollision();
+	void UpdateProps(float deltaTime);
+	void SpawnProp(glm::vec2 Position);
+	void ActiveProp(const Ref(Prop)& prop);
+	bool IsOtherPropActive(PropType type);
+	bool ShouldSpawn(unsigned int chance);
 };
 

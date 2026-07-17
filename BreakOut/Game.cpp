@@ -46,6 +46,12 @@ void Game::Init()
 	AssetManager::LoadTexture2D("Assets/Texture2D/paddle.png", "paddle.png");
 	AssetManager::LoadTexture2D("Assets/Texture2D/awesomeface.png", "awesomeface.png");
 	AssetManager::LoadTexture2D("Assets/Texture2D/particle.png", "particle.png");
+	AssetManager::LoadTexture2D("Assets/Texture2D/prop_chaos.png", "prop_chaos.png");
+	AssetManager::LoadTexture2D("Assets/Texture2D/prop_confuse.png", "prop_confuse.png");
+	AssetManager::LoadTexture2D("Assets/Texture2D/prop_pad_increase.png", "prop_pad_increase.png");
+	AssetManager::LoadTexture2D("Assets/Texture2D/prop_passthrough.png", "prop_passthrough.png");
+	AssetManager::LoadTexture2D("Assets/Texture2D/prop_speed.png", "prop_speed.png");
+
 
 
 	m_Player = std::make_shared<GameObject>(
@@ -103,8 +109,9 @@ void Game::Update(float deltaTime)
 		else
 		{
 			m_Ball->Move(deltaTime, m_Width, m_Height);
-			DoCollision();
 		}
+		DoCollision();
+		UpdateProps(deltaTime);
 		if (m_Ball->Velocity.x >= 0.05f || m_Ball->Velocity.x <= -0.05f)
 			m_ParticleGenerator->UpdateParticles(deltaTime, glm::vec2(m_Ball->Position.x + m_Ball->Radius, m_Ball->Position.y + m_Ball->Radius), 1, m_Ball->Radius / 2);
 		else if (!m_ParticleGenerator->IsEmpty())
@@ -126,14 +133,14 @@ void Game::ProcessInput(float deltaTime)
 			//std::cout << "A was Pressed!" << std::endl;
 			if (!m_Ball->lanuch)
 				m_Ball->Velocity = glm::vec2(-1.0f * ball_speed,1.0 * ball_speed);
-			std::cout <<m_Ball->Velocity.x << "," << m_Ball->Velocity.y << std::endl;
+			//std::cout <<m_Ball->Velocity.x << "," << m_Ball->Velocity.y << std::endl;
 			m_Player->Position.x -= deltaTime * m_Player->Speed;
 		}
 		else if (Keys[GLFW_KEY_D] == true && m_Player->Position.x + m_Player->Size.x <= m_Width)
 		{
 			if (!m_Ball->lanuch)
 				m_Ball->Velocity = glm::vec2(1.0f * ball_speed, 1.0 * ball_speed);
-			std::cout << m_Ball->Velocity.x << "," << m_Ball->Velocity.y << std::endl;
+			//std::cout << m_Ball->Velocity.x << "," << m_Ball->Velocity.y << std::endl;
 			m_Player->Position.x += deltaTime * m_Player->Speed;
 		}
 		else
@@ -154,6 +161,11 @@ void Game::Render()
 			0.0f, glm::vec4(1.0f));
 		m_Player->DrawObject(m_Sprite2DRenderer);
 		m_Ball->DrawObject(m_Sprite2DRenderer);
+		for (auto& prop : m_Props)
+		{
+			if (!prop->Destroyed)
+				prop->DrawObject(m_Sprite2DRenderer);
+		}
 		m_ParticleGenerator->Draw();
 		if (!m_Levels[m_Level]->IsCompleted())
 			m_Levels[m_Level]->Draw(m_Sprite2DRenderer);
@@ -189,6 +201,16 @@ std::tuple<CollisionDir,glm::vec2> Game::IsCollision(const Ref(BallObject)& ball
 	return std::tuple<CollisionDir, glm::vec2>((CollisionDir)bestDir, closestPoint);
 }
 
+bool Game::IsCollision(const Ref(GameObject)& AABB1, const Ref(GameObject)& AABB2)
+{
+	if (AABB1->Position.x + AABB1->Size.x > AABB2->Position.x && AABB1->Position.x < AABB2->Position.x + AABB2->Size.x)
+	{
+		if (AABB1->Position.y < AABB2->Position.y + AABB2->Size.y && AABB1->Position.y + AABB1->Size.y > AABB2->Position.y)
+			return true;
+	}
+	return false;
+}
+
 void Game::DoCollision()
 {
 	if (State == GAME_ACTIVE)
@@ -197,80 +219,352 @@ void Game::DoCollision()
 		{
 			if (!brick->IsDestroyed)
 			{
-				CollisionDir result = std::get<0>(IsCollision(m_Ball,brick));
-				glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, brick));
-				if (result!= NONE)
+				if (!m_Ball->PassThrough)
 				{
-					if (!m_Effect->Shake)
+					CollisionDir result = std::get<0>(IsCollision(m_Ball, brick));
+					glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, brick));
+					if (result != NONE)
 					{
-						m_Effect->ShakeTime = 0.05f;
+						if (!m_Effect->Shake)
+						{
+							m_Effect->ShakeTime = 0.05f;
 							m_Effect->Shake = true;
+						}
+						if (!brick->IsSolid)
+						{
+							brick->IsDestroyed = true;
+							SpawnProp(brick->Position);
+						}
+						switch (result)
+						{
+						case UP:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y);
+							m_Ball->Velocity.y = -m_Ball->Velocity.y;
+							break;
+						}
+						case DOWN:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y - m_Ball->Radius * 2);
+							m_Ball->Velocity.y = -m_Ball->Velocity.y;
+							break;
+						}
+						case LEFT:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius * 2, closestPoint.y - m_Ball->Radius);
+							m_Ball->Velocity.x = -m_Ball->Velocity.x;
+							break;
+						}
+						case RIGHT:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x, closestPoint.y - m_Ball->Radius);
+							m_Ball->Velocity.x = -m_Ball->Velocity.x;
+							break;
+						}
+						}
 					}
-					if(!brick->IsSolid)
+				}
+				else if (m_Ball->PassThrough)
+				{
+					CollisionDir result = std::get<0>(IsCollision(m_Ball, brick));
+					glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, brick));
+					if (!brick->IsSolid && result !=NONE)
+					{
 						brick->IsDestroyed = true;
-					switch (result)
-					{
-					case UP: 
-					{
-						m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y);
-						m_Ball->Velocity.y = -m_Ball->Velocity.y;
-						break;
+						SpawnProp(brick->Position);
 					}
-					case DOWN: 
+					else if (brick->IsSolid)
 					{
-						m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y - m_Ball->Radius * 2);
-						m_Ball->Velocity.y = -m_Ball->Velocity.y;
-						break;
-					}
-					case LEFT: 
-					{
-						m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius * 2, closestPoint.y - m_Ball->Radius);
-						m_Ball->Velocity.x = -m_Ball->Velocity.x;
-						break;
-					}
-					case RIGHT: 
-					{
-						m_Ball->Position = glm::vec2(closestPoint.x,closestPoint.y - m_Ball->Radius);
-						m_Ball->Velocity.x = -m_Ball->Velocity.x;
-						break;
-					}
+						
+						if (result != NONE)
+						{
+							if (!m_Effect->Shake)
+							{
+								m_Effect->ShakeTime = 0.05f;
+								m_Effect->Shake = true;
+							}
+						}
+						switch (result)
+						{
+						case UP:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y);
+							m_Ball->Velocity.y = -m_Ball->Velocity.y;
+							break;
+						}
+						case DOWN:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y - m_Ball->Radius * 2);
+							m_Ball->Velocity.y = -m_Ball->Velocity.y;
+							break;
+						}
+						case LEFT:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius * 2, closestPoint.y - m_Ball->Radius);
+							m_Ball->Velocity.x = -m_Ball->Velocity.x;
+							break;
+						}
+						case RIGHT:
+						{
+							m_Ball->Position = glm::vec2(closestPoint.x, closestPoint.y - m_Ball->Radius);
+							m_Ball->Velocity.x = -m_Ball->Velocity.x;
+							break;
+						}
+						}
 					}
 				}
 			}
 			
 		}
-		CollisionDir result = std::get<0>(IsCollision(m_Ball, m_Player));
+		CollisionDir ball_result = std::get<0>(IsCollision(m_Ball, m_Player));
 		glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, m_Player));
-		if (result != NONE)
+		if (ball_result != NONE)
 		{
-			switch (result)
+				switch (ball_result)
+				{
+				case UP:
+				{
+					m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y);
+					m_Ball->Velocity.y = -m_Ball->Velocity.y;
+					break;
+				}
+				case DOWN:
+				{
+					m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y - m_Ball->Radius * 2);
+					m_Ball->Velocity.y = -m_Ball->Velocity.y;
+					break;
+				}
+				case LEFT:
+				{
+					m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius * 2, closestPoint.y - m_Ball->Radius);
+					m_Ball->Velocity.x = -m_Ball->Velocity.x;
+					break;
+				}
+				case RIGHT:
+				{
+					m_Ball->Position = glm::vec2(closestPoint.x, closestPoint.y - m_Ball->Radius);
+					m_Ball->Velocity.x = -m_Ball->Velocity.x;
+					break;
+				}
+				}
+			
+		}
+		for (auto& prop : m_Props)
+		{
+			if (IsCollision(prop, m_Player))
+				ActiveProp(prop);
+		}
+
+	}
+
+}
+void Game::SpawnProp(glm::vec2 Position)
+{
+	if (ShouldSpawn(60))
+	{
+
+		Ref(Prop) prop = std::make_shared<Prop>(
+			AssetManager::GetTexture2D("prop_pad_increase.png"),
+			Position,glm::vec3(1.0f,0.6f,0.4f),
+			10.0f,
+			PAD_SIZE_INCREASE
+			);
+		m_Props.push_back(prop);
+		std::cout << "生成Prop!类型为:" << prop->Type << std::endl;
+	}
+	if (ShouldSpawn(60))
+	{
+		Ref(Prop) prop = std::make_shared<Prop>(
+			AssetManager::GetTexture2D("prop_passthrough.png"),
+			Position, glm::vec3(0.5f, 1.0f, 0.5f),
+			10.0f,
+			PASS_THROUGH
+		);
+		m_Props.push_back(prop);
+		std::cout << "生成Prop!类型为:" << prop->Type << std::endl;
+
+	}
+	if (ShouldSpawn(60))
+	{
+		Ref(Prop) prop = std::make_shared<Prop>(
+			AssetManager::GetTexture2D("prop_speed.png"),
+			Position, glm::vec3(0.5f, 0.5f, 0.5f),
+			15.0f,
+			SPEEDUP
+		);
+		m_Props.push_back(prop);
+		std::cout << "生成Prop!类型为:" << prop->Type << std::endl;
+
+	}
+	if (ShouldSpawn(15))
+	{
+		Ref(Prop) prop = std::make_shared<Prop>(
+			AssetManager::GetTexture2D("prop_chaos.png"),
+			Position, glm::vec3(0.9f, 0.25f, 0.25f),
+			15.0f,
+			CHAOS
+		);
+		m_Props.push_back(prop);
+		std::cout << "生成Prop!类型为:" << prop->Type << std::endl;
+
+	}
+	if (ShouldSpawn(15))
+	{
+		Ref(Prop) prop = std::make_shared<Prop>(
+			AssetManager::GetTexture2D("prop_confuse.png"),
+			Position, glm::vec3(1.0f, 0.3f, 0.3f),
+			15.0f,
+			CONFUSE
+		);
+		m_Props.push_back(prop);
+		std::cout << "生成Prop!类型为:" << prop->Type << std::endl;
+
+	}
+}
+void Game::ActiveProp(const Ref(Prop)& prop)
+{
+	if (prop->Actived)
+		return;
+	
+	prop->Destroyed = true;
+	
+
+	switch (prop->Type)
+	{
+	case SPEEDUP:
+	{
+		std::cout << "SPEEDUP已激活!" << std::endl;
+		if (!IsOtherPropActive(SPEEDUP))
+		{
+			m_Ball->Velocity *= 1.5;
+			prop->Actived = true;
+		}
+		break;
+	}
+	case PAD_SIZE_INCREASE:
+	{
+		std::cout << "PAD_SIZE_INCREASE已激活!" << std::endl;
+		if (!IsOtherPropActive(PAD_SIZE_INCREASE))
+		{
+			m_Player->Size.x *= 1.5;
+			prop->Actived = true;
+		}
+		break;
+	}
+	case PASS_THROUGH:
+	{
+		std::cout << "PASS_THROUGH已激活!" << std::endl;
+		if (!IsOtherPropActive(PASS_THROUGH))
+		{
+			m_Ball->PassThrough = true;
+			prop->Actived = true;
+		}
+		m_Ball->Color = glm::vec3(1.0f, 0.5f, 0.5f);
+		break;
+	}
+	case CHAOS:
+	{
+		std::cout << "CHAOS已激活!" << std::endl;
+		if (!IsOtherPropActive(CHAOS))
+		{
+			m_Effect->Chaos = true;
+			prop->Actived = true;
+		}
+		break;
+	}
+	case CONFUSE:
+	{
+		std::cout << "CONFUSE已激活!" << std::endl;
+		if (!IsOtherPropActive(CONFUSE))
+		{
+			m_Effect->Confuse = true;
+			prop->Actived = true;
+		}
+		break;
+	}
+	
+	}
+}
+bool Game::IsOtherPropActive(PropType type)
+{
+	for (int i = 0; i < m_Props.size();++i)
+	{
+		if (m_Props[i]->Type == type && m_Props[i]->Actived)
+			return true;
+	}
+	return false;
+}//用于判断是否同时激活了多个同种Prop的效果
+bool Game::ShouldSpawn(unsigned int chance)
+{
+	unsigned int random = rand() % chance;
+	return random == 0;
+}//计算Prop的产生概率
+void Game::UpdateProps(float deltaTime)
+{
+	for (auto& prop : m_Props)
+	{
+		prop->Position += prop->Velocity * deltaTime;
+		if (prop->Position.y <= 0)
+		{
+			printf("Destroyed = true!\n");
+			prop->Destroyed = true;
+		}
+		if (prop->Duration >= 0 && prop->Actived)
+			prop->Duration -= deltaTime;
+		else if (prop->Duration <= 0)
+		{
+			prop->Actived = false;
+
+			switch (prop->Type)
 			{
-			case UP:
+			case SPEEDUP:
 			{
-				m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y);
-				m_Ball->Velocity.y = -m_Ball->Velocity.y;
-				break;
+				if (!IsOtherPropActive(SPEEDUP))
+				{
+					m_Ball->Velocity /= 1.5;
+					break;
+				}
 			}
-			case DOWN:
+			case PAD_SIZE_INCREASE:
 			{
-				m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius, closestPoint.y - m_Ball->Radius * 2);
-				m_Ball->Velocity.y = -m_Ball->Velocity.y;
-				break;
+				if (!IsOtherPropActive(PAD_SIZE_INCREASE))
+				{
+					m_Player->Size = PLAYER_SIZE;
+					break;
+				}
 			}
-			case LEFT:
+			case PASS_THROUGH:
 			{
-				m_Ball->Position = glm::vec2(closestPoint.x - m_Ball->Radius * 2, closestPoint.y - m_Ball->Radius);
-				m_Ball->Velocity.x = -m_Ball->Velocity.x;
-				break;
+				if (!IsOtherPropActive(PASS_THROUGH))
+				{
+					m_Ball->PassThrough = false;
+					m_Ball->Color = glm::vec3(1.0f);
+					break;
+				}
 			}
-			case RIGHT:
+			case CHAOS:
 			{
-				m_Ball->Position = glm::vec2(closestPoint.x, closestPoint.y - m_Ball->Radius);
-				m_Ball->Velocity.x = -m_Ball->Velocity.x;
-				break;
+				if (!IsOtherPropActive(CHAOS))
+				{
+					m_Effect->Chaos = false;
+					break;
+				}
+			}
+			case CONFUSE:
+			{
+				if (!IsOtherPropActive(CONFUSE))
+				{
+					m_Effect->Confuse = false;
+					break;
+				}
 			}
 			}
 		}
 	}
-
+	m_Props.erase(std::remove_if
+	(m_Props.begin(), m_Props.end(), [](const Ref(Prop)& prop) {return prop->Destroyed && !prop->Actived;})
+		, m_Props.end());
+	
 }
+
+
