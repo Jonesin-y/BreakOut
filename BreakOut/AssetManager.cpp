@@ -22,6 +22,7 @@ void AssetManager::LoadTexture2D(const std::string& filePath, const std::string&
 	m_Texture2Ds[name] = std::make_shared<Texture2D>(filePath);
 }
 
+
 const Ref(Shader)& AssetManager::GetShader(const std::string& name)
 {
 	auto it = m_Shaders.find(name);
@@ -46,4 +47,8 @@ const Ref(Texture2D)& AssetManager::GetTexture2D(const std::string& name)
 	printf("Texture2D: %s 不存在喵!\n", name.c_str());
 	static const Ref(Texture2D) s_NullTexture2D;
 	return s_NullTexture2D;
+}
+
+AssetManager::AssetManager()
+{
 }

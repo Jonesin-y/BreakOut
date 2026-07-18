@@ -7,7 +7,6 @@
 #include "ParticleGenerator.h"
 #include <filesystem>
 #include <GLFW/glfw3.h>
-
 const glm::vec2 PLAYER_SIZE = glm::vec2(200.0f, 40.0f);
 const float PLAYER_SPEED = 400.0f;
 const float BALL_RADIUS = 25.0f;
@@ -28,12 +27,45 @@ Game::Game(float Width, float Height)
 }
 Game::~Game()
 {
+	ma_sound_uninit(&m_bgm);
+	ma_sound_uninit(&m_brick);
+	ma_sound_uninit(&m_solid_brick);
+	ma_sound_uninit(&m_prop);
+	ma_sound_uninit(&m_pad);
+
+	ma_engine_uninit(&m_AudioEngine);
 }
 void Game::Init()
 {
 	const glm::vec2 PLAYER_DEFAULT_POS = glm::vec2(m_Width / 2 - PLAYER_SIZE.x/2, 0.0f);
 	
-	
+	if (ma_engine_init(NULL, &m_AudioEngine) != MA_SUCCESS)
+		std::cout << "miniaudio初始化失败!" << std::endl;
+	ma_result bgm_result = ma_sound_init_from_file(&m_AudioEngine, "Assets/Audio/bgm.mp3", MA_SOUND_FLAG_STREAM, NULL, NULL, &m_bgm);
+	ma_result brick_result = ma_sound_init_from_file(&m_AudioEngine, "Assets/Audio/brick.mp3", 0, NULL, NULL, &m_brick);
+	ma_result solid_brick_result = ma_sound_init_from_file(&m_AudioEngine, "Assets/Audio/solid_brick.wav", 0, NULL, NULL, &m_solid_brick);
+	ma_result pad_result = ma_sound_init_from_file(&m_AudioEngine, "Assets/Audio/pad.wav", 0, NULL, NULL, &m_pad);
+	ma_result prop_result = ma_sound_init_from_file(&m_AudioEngine, "Assets/Audio/prop.wav", 0, NULL, NULL, &m_prop);
+
+	if (bgm_result != MA_SUCCESS)
+		std::cout << "bgm加载失败!" << std::endl;
+	if (brick_result != MA_SUCCESS)
+		std::cout << "brick加载失败!" << std::endl;
+	if (solid_brick_result != MA_SUCCESS)
+		std::cout << "solid_brick加载失败!" << std::endl;
+	if (pad_result != MA_SUCCESS)
+		std::cout << "pad加载失败!" << std::endl;
+	if (prop_result != MA_SUCCESS)
+		std::cout << "prop加载失败!" << std::endl;
+	ma_sound_set_looping(&m_bgm, MA_TRUE);
+	ma_sound_set_volume(&m_bgm, 0.5f);
+	ma_sound_set_volume(&m_brick, 1.0f);
+	ma_sound_set_volume(&m_solid_brick, 1.0f);
+	ma_sound_set_volume(&m_prop, 1.0f);
+	ma_sound_set_volume(&m_pad, 1.0f);
+	ma_sound_start(&m_bgm);
+
+
 
 	std::cout << "当前工作目录" << std::filesystem::current_path() << std::endl;
 	AssetManager::LoadShader("Assets/Shader/test.vs", "Assets/Shader/test.fs","Sprite2DShader");
@@ -232,9 +264,29 @@ void Game::DoCollision()
 						}
 						if (!brick->IsSolid)
 						{
+							if (ma_sound_is_playing(&m_brick))
+							{
+								ma_sound_stop(&m_brick);
+								ma_sound_seek_to_pcm_frame(&m_brick, 0);
+								ma_sound_start(&m_brick);
+							}
+							else
+								ma_sound_start(&m_brick);
 							brick->IsDestroyed = true;
 							SpawnProp(brick->Position);
 						}
+						else if (brick->IsSolid)
+						{
+							if (ma_sound_is_playing(&m_solid_brick))
+							{
+								ma_sound_stop(&m_solid_brick);
+								ma_sound_seek_to_pcm_frame(&m_solid_brick, 0);
+								ma_sound_start(&m_solid_brick);
+							}
+							else
+								ma_sound_start(&m_solid_brick);
+						}
+
 						switch (result)
 						{
 						case UP:
@@ -270,6 +322,15 @@ void Game::DoCollision()
 					glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, brick));
 					if (!brick->IsSolid && result !=NONE)
 					{
+						if (ma_sound_is_playing(&m_brick))
+						{
+							ma_sound_stop(&m_brick);
+							ma_sound_seek_to_pcm_frame(&m_brick, 0);
+
+							ma_sound_start(&m_brick);
+						}
+						else
+							ma_sound_start(&m_brick);
 						brick->IsDestroyed = true;
 						SpawnProp(brick->Position);
 					}
@@ -280,6 +341,16 @@ void Game::DoCollision()
 						{
 							if (!m_Effect->Shake)
 							{
+								if (ma_sound_is_playing(&m_solid_brick))
+								{
+									ma_sound_stop(&m_solid_brick);
+									ma_sound_seek_to_pcm_frame(&m_solid_brick, 0);
+
+									ma_sound_start(&m_solid_brick);
+								}
+								else
+									ma_sound_start(&m_solid_brick);
+
 								m_Effect->ShakeTime = 0.05f;
 								m_Effect->Shake = true;
 							}
@@ -320,6 +391,8 @@ void Game::DoCollision()
 		glm::vec2 closestPoint = std::get<1>(IsCollision(m_Ball, m_Player));
 		if (ball_result != NONE)
 		{
+			if(m_Ball->lanuch)
+				ma_sound_start(&m_pad);
 				switch (ball_result)
 				{
 				case UP:
@@ -352,7 +425,19 @@ void Game::DoCollision()
 		for (auto& prop : m_Props)
 		{
 			if (IsCollision(prop, m_Player))
+			{
+				if (ma_sound_is_playing(&m_prop))
+				{
+					ma_sound_stop(&m_prop);
+					ma_sound_seek_to_pcm_frame(&m_prop, 0);
+
+					ma_sound_start(&m_prop);
+				}
+				else
+					ma_sound_start(&m_prop);
+
 				ActiveProp(prop);
+			}
 		}
 
 	}

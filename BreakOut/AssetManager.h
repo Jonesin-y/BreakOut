@@ -14,8 +14,9 @@ public:
 	const static Ref(Shader)& GetShader(const std::string& name);
 	const static Ref(Texture2D)& GetTexture2D(const std::string& name);
 private:
-	AssetManager() {};
+	AssetManager(); 
 	static std::map<std::string, Ref(Shader)> m_Shaders;
 	static std::map<std::string, Ref(Texture2D)>m_Texture2Ds;
+	
 };
 

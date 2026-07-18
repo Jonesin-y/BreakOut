@@ -9,6 +9,7 @@
 #include<memory>
 #include<tuple>
 #include"Core.h"
+#include<miniaudio/miniaudio.h>
 enum CollisionDir
 {
 	NONE = -1,UP,DOWN,LEFT,RIGHT
@@ -50,5 +51,8 @@ private:
 	void ActiveProp(const Ref(Prop)& prop);
 	bool IsOtherPropActive(PropType type);
 	bool ShouldSpawn(unsigned int chance);
+	ma_engine m_AudioEngine;
+	ma_sound m_bgm, m_brick, m_prop, m_pad, m_solid_brick;
+
 };
 
