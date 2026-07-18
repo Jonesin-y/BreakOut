@@ -1,1 +1,1 @@
-OpegnGL游戏开发的学习项目,原教程来自LearnOpenGL CN
+基于OpegnGL图形库开发的游戏项目，仅做学习用，教程来自LearnOpenGL
