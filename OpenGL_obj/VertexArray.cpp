@@ -19,6 +19,7 @@ VertexArray::~VertexArray()
 void VertexArray::AddVertexBuffer(const Ref(VertexBuffer)& vb)
 {
 	Bind();
+	vb->Bind();  // 必须先绑定 VBO，再设置顶点属性指针
 	BufferLayout layout = vb->GetBufferLayout();
 	auto& elements = layout.GetElements();
 	for (auto& element : elements)
@@ -35,7 +36,6 @@ void VertexArray::AddVertexBuffer(const Ref(VertexBuffer)& vb)
 		m_ShaderPipeID++;
 	}
 	m_VertexBuffers.push_back(vb);
-	vb->Bind();
 }
 
 void VertexArray::SetIndexBuffer(const Ref(IndexBuffer)& ib)

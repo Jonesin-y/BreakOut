@@ -21,7 +21,7 @@ glm::vec2 collision_direction[] =
 };
 
 Game::Game(float Width, float Height)
-	:m_Width(Width),m_Height(Height),State(GAME_ACTIVE)
+	:m_Width(Width),m_Height(Height),m_Level(0),m_Lives(3),State(GAME_WIN)
 {
 
 }
@@ -71,6 +71,8 @@ void Game::Init()
 	AssetManager::LoadShader("Assets/Shader/test.vs", "Assets/Shader/test.fs","Sprite2DShader");
 	AssetManager::LoadShader("Assets/Shader/particle.vs", "Assets/Shader/particle.fs", "ParticleShader");
 	AssetManager::LoadShader("Assets/Shader/scene_effect.vs", "Assets/Shader/scene_effect.fs", "EffectShader");
+	AssetManager::LoadShader("Assets/Shader/text.vs", "Assets/Shader/text.fs", "TextShader");
+
 	AssetManager::LoadTexture2D("Assets/Texture2D/Jonesin.jpg", "Jonesin.jpg");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Background.jpg", "Background.jpg");
 	AssetManager::LoadTexture2D("Assets/Texture2D/Normal_Brick.png", "Normal_Brick.png");
@@ -101,7 +103,7 @@ void Game::Init()
 			ball_speed,
 			BALL_RADIUS
 			);
-
+	m_TextRenderer = std::make_shared<TextRenderer>(AssetManager::GetShader("TextShader"));
 	Ref(GameLevel) level_0 = std::make_shared<GameLevel>();level_0->Load("Assets/Levels/Level0.txt", m_Width, m_Height/2);
 	m_Levels.push_back(level_0);
 	Ref(GameLevel) level_1 = std::make_shared<GameLevel>();level_1->Load("Assets/Levels/Level1.txt", m_Width, m_Height/2);
@@ -110,17 +112,19 @@ void Game::Init()
 	m_Levels.push_back(level_2);
 	Ref(GameLevel) level_3 = std::make_shared<GameLevel>();level_3->Load("Assets/Levels/Level3.txt", m_Width, m_Height/2);
 	m_Levels.push_back(level_3);
-	m_Level = 0;
 	glm::mat4 projection = glm::mat4(1.0f);
 	projection = glm::ortho(0.0f, m_Width, 0.0f, m_Height, -1.0f, 1.0f);
 	Ref(Shader) Sprite2DShader = AssetManager::GetShader("Sprite2DShader");
 	Ref(Shader) Particle2DShader = AssetManager::GetShader("ParticleShader");
 	Ref(Shader) EffectShader = AssetManager::GetShader("EffectShader");
+	Ref(Shader) TextShader = AssetManager::GetShader("TextShader");
 	Sprite2DShader->SetUniform1i("u_Sprite2DImage", 0);
 	Sprite2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
 	Particle2DShader->SetUniform1i("u_ParticleImage", 1);
 	Particle2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
 	Particle2DShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
+	TextShader->SetUniform1i("u_TextImage", 0);
+	TextShader->SetUniformMat4f("u_projection", 1, GL_FALSE, &projection[0][0]);
 	m_Sprite2DRenderer= std::make_shared<Sprite2DRenderer>(Sprite2DShader);
 	m_ParticleGenerator = std::make_shared<ParticleGenerator>(AssetManager::GetTexture2D("particle.png"), Particle2DShader, 500);
 	
@@ -132,6 +136,8 @@ void Game::Update(float deltaTime)
 {
 	if (State == GAME_ACTIVE)
 	{
+		if (m_Levels[m_Level]->IsCompleted())
+			State = GAME_WIN;
 		if (m_Effect->Shake)
 			m_Effect->ShakeTime -= deltaTime;
 		if (m_Effect->ShakeTime <= 0)
@@ -142,6 +148,14 @@ void Game::Update(float deltaTime)
 		{
 			m_Ball->Move(deltaTime, m_Width, m_Height);
 		}
+		if (m_Ball->Position.y <= 0.0f)
+			m_Lives -= 1;
+		if (m_Lives <= 0)
+		{
+			m_Effect->Chaos = false;
+			State = GAME_MENU;
+		}
+
 		DoCollision();
 		UpdateProps(deltaTime);
 		if (m_Ball->Velocity.x >= 0.05f || m_Ball->Velocity.x <= -0.05f)
@@ -156,6 +170,33 @@ void Game::Update(float deltaTime)
 void Game::ProcessInput(float deltaTime)
 {
 	//std::cout << "ProcessInput!" << std::endl;
+	if (State == GAME_MENU)
+	{
+		if (Keys[GLFW_KEY_W] == true && !ProcessdKeys[GLFW_KEY_W] == true)
+		{
+			m_Level = (m_Level + 1) % 4;
+			ProcessdKeys[GLFW_KEY_W] = true;
+		}
+		else if(Keys[GLFW_KEY_W] == false && ProcessdKeys[GLFW_KEY_W]==true)
+			ProcessdKeys[GLFW_KEY_W] = false;
+		if (Keys[GLFW_KEY_S] == true && !ProcessdKeys[GLFW_KEY_S] == true)
+		{
+			m_Level = (m_Level - 1) % 4;
+			ProcessdKeys[GLFW_KEY_S] = true;
+		}
+		else if (Keys[GLFW_KEY_S] == false && ProcessdKeys[GLFW_KEY_S] == true)
+			ProcessdKeys[GLFW_KEY_S] = false;
+		if (Keys[GLFW_KEY_ENTER] == true)
+		{
+			m_Effect->Chaos = false;
+			m_Effect->Confuse = false;
+			ResetLevel();
+			ResetPlayer();
+			m_Lives = 3;
+			State = GAME_ACTIVE;
+		}
+
+	}
 	if (State == GAME_ACTIVE)
 	{
 		if (Keys[GLFW_KEY_J] == true)
@@ -181,10 +222,39 @@ void Game::ProcessInput(float deltaTime)
 				m_Ball->Velocity = glm::vec2(0.0f, 1.0 * ball_speed);
 		}
 	}
+	if (State == GAME_WIN)
+	{
+		if (Keys[GLFW_KEY_ENTER] == true)
+			State = GAME_MENU;
+	}
 }
 
 void Game::Render()
 {
+	if (State == GAME_MENU)
+	{
+		m_Effect->BeginRender();
+		m_Sprite2DRenderer->DrawSprite2D(AssetManager::GetTexture2D("Background.jpg"),
+			glm::vec2(0.0f), glm::vec2(m_Width, m_Height),
+			0.0f, glm::vec4(1.0f));
+		m_Player->DrawObject(m_Sprite2DRenderer);
+		m_Ball->DrawObject(m_Sprite2DRenderer);
+		for (auto& prop : m_Props)
+		{
+			if (!prop->Destroyed)
+				prop->DrawObject(m_Sprite2DRenderer);
+		}
+		m_ParticleGenerator->Draw();
+		if (!m_Levels[m_Level]->IsCompleted())
+			m_Levels[m_Level]->Draw(m_Sprite2DRenderer);
+
+		m_ParticleGenerator->Draw();
+
+		m_TextRenderer->Draw("Press Enter To Start",m_Width/2 - 380.0f,m_Height/2,1.0f,glm::vec3(1.0f));
+		m_TextRenderer->Draw("Press W Or S To Change Level", m_Width / 2 - 280.0f, m_Height/2- 40.0f,0.5f,glm::vec3(1.0f));
+		m_Effect->EndRender();
+		m_Effect->Render(glfwGetTime());
+	}
 	if (State == GAME_ACTIVE)
 	{
 		m_Effect->BeginRender();
@@ -204,9 +274,42 @@ void Game::Render()
 		else
 			std::cout << "关卡已完成！" << std::endl;
 		m_ParticleGenerator->Draw();
+		switch (m_Lives)
+		{
+		case 0: { m_TextRenderer->Draw("Lives:0", 10.0f, m_Height - 60.0f, 1.0f, glm::vec3(1.0f)); break; }
+		case 1: { m_TextRenderer->Draw("Lives:1", 10.0f, m_Height - 60.0f, 1.0f, glm::vec3(1.0f)); break; }
+		case 2: { m_TextRenderer->Draw("Lives:2", 10.0f, m_Height - 60.0f, 1.0f, glm::vec3(1.0f)); break; }
+		case 3: { m_TextRenderer->Draw("Lives:3", 10.0f, m_Height - 60.0f, 1.0f, glm::vec3(1.0f)); break; }
+
+		}
 		m_Effect->EndRender();
 		m_Effect->Render(glfwGetTime());
 	}
+	if (State == GAME_WIN)
+	{
+		m_Effect->BeginRender();
+		m_Sprite2DRenderer->DrawSprite2D(AssetManager::GetTexture2D("Background.jpg"),
+			glm::vec2(0.0f), glm::vec2(m_Width, m_Height),
+			0.0f, glm::vec4(1.0f));
+		m_Player->DrawObject(m_Sprite2DRenderer);
+		m_Ball->DrawObject(m_Sprite2DRenderer);
+		for (auto& prop : m_Props)
+		{
+			if (!prop->Destroyed)
+				prop->DrawObject(m_Sprite2DRenderer);
+		}
+		m_ParticleGenerator->Draw();
+		if (!m_Levels[m_Level]->IsCompleted())
+			m_Levels[m_Level]->Draw(m_Sprite2DRenderer);
+		else
+			std::cout << "关卡已完成！" << std::endl;
+		m_ParticleGenerator->Draw();
+		m_TextRenderer->Draw("YOU ARE WINNER! WWW",m_Width/2 - 360.0f,m_Height/2-16.0f,1.0f,glm::vec3(0.0f,1.0f,0.0f));
+		m_TextRenderer->Draw("Press Entry To Retry Or Press Exit To Quit",m_Width/2 - 380.0f,m_Height/2-40.0f,0.5f,glm::vec3(1.0f));
+		m_Effect->EndRender();
+		m_Effect->Render(glfwGetTime());
+	}
+	
 }
 
 std::tuple<CollisionDir,glm::vec2> Game::IsCollision(const Ref(BallObject)& ball, const Ref(GameObject)& brick)
@@ -231,6 +334,26 @@ std::tuple<CollisionDir,glm::vec2> Game::IsCollision(const Ref(BallObject)& ball
 		}
 	}
 	return std::tuple<CollisionDir, glm::vec2>((CollisionDir)bestDir, closestPoint);
+}
+
+void Game::ResetLevel()
+{
+	if(m_Level == 0)
+		m_Levels[m_Level]->Load("Assets/Levels/Level0.txt", m_Width, m_Height / 2);
+	else if(m_Level == 1)
+		m_Levels[m_Level]->Load("Assets/Levels/Level1.txt", m_Width, m_Height / 2);
+	else if(m_Level == 2)
+		m_Levels[m_Level]->Load("Assets/Levels/Level2.txt", m_Width, m_Height / 2);
+	else if(m_Level == 3)
+		m_Levels[m_Level]->Load("Assets/Levels/Level3.txt", m_Width, m_Height / 2);
+
+
+}
+
+void Game::ResetPlayer()
+{
+	m_Player->Position = glm::vec2(m_Width / 2 - PLAYER_SIZE.x / 2, 0.0f);
+	m_Lives = 3;
 }
 
 bool Game::IsCollision(const Ref(GameObject)& AABB1, const Ref(GameObject)& AABB2)

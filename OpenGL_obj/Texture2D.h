@@ -1,11 +1,13 @@
 #pragma once
 #include<string>
 #include<Glad/glad.h>
+#include"stb_truetype.h"
 class Texture2D
 {
 public:
 	Texture2D(const std::string fileName);
 	Texture2D(int width,int height);
+	Texture2D(int width, int height, unsigned char* Texdata);
 	~Texture2D();
 	void Bind(unsigned int slot);
 	void UnBind();

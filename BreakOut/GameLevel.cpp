@@ -55,6 +55,7 @@ bool GameLevel::IsCompleted()
 
 bool GameLevel::Init(std::vector<std::vector<unsigned int>>& tileData, unsigned int lvlWidth, unsigned int lvlHeight)
 {
+	m_Bricks.clear();
 	unsigned int x_Count = tileData[0].size();
 	unsigned int y_Count = tileData.size();
 	float brickWidth =  static_cast<float>(lvlWidth) / x_Count;
